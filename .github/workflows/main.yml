@@ -1,0 +1,37 @@
+name: Main
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore
+      - name: Run Integration Tests
+        run: dotnet test --no-build --verbosity normal ./PlutoDAO.Gov.Worker.Test.Integration
+      - name: Start Stellar Server
+        run: docker-compose -f ./PlutoDAO.Gov.Worker.Test.Integration/docker-compose.yml up -d
+      - name: Check running containers
+        run: docker ps -a
+      - name: Sleep for 30 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '30s'
+      - name: Check logs
+        run: docker logs stellar
+      - name: Copy default appsettings file
+        run: cp ./PlutoDAO.Gov.Worker.Test.Integration/appsettings.test.json.dist ./PlutoDAO.Gov.Worker.Test.Integration/bin/Debug/net5.0/appsettings.test.json
+      - name: Run Integration tests
+        run: dotnet test --no-build --verbosity diag ./PlutoDAO.Gov.Worker.Test.Integration
