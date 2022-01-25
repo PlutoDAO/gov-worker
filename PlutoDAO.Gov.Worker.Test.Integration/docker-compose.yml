@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  stellar:
+    build: .
+    ports:
+      - "8000:8000"
+      - "5555:5555"
+    container_name: gov-worker
+    environment:
+      LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+      FAKETIME_NO_CACHE: 1
