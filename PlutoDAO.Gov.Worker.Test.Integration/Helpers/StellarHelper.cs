@@ -13,18 +13,6 @@ namespace PlutoDAO.Gov.Worker.Test.Integration.Helpers
         public static KeyPair MasterAccount { get; set; } = null!;
         public static Server Server { get; set; } = null!;
 
-        public static async Task AddXlmFunds(KeyPair destinationKeyPair)
-        {
-            var fundAccountOp = new PaymentOperation.Builder(destinationKeyPair, new AssetTypeNative(), "10000")
-                .SetSourceAccount(MasterAccount)
-                .Build();
-
-            var masterAccount = await Server.Accounts.Account(MasterAccount.AccountId);
-            var transaction = new TransactionBuilder(masterAccount).AddOperation(fundAccountOp).Build();
-            transaction.Sign(MasterAccount);
-            await Server.SubmitTransaction(transaction);
-        }
-
         private static async Task FundAccountWithXlm(string address)
         {
             var destinationKeyPair = KeyPair.FromAccountId(address);
@@ -38,44 +26,6 @@ namespace PlutoDAO.Gov.Worker.Test.Integration.Helpers
             await Server.SubmitTransaction(transaction);
 
             Console.WriteLine($"Account {address} funded successfully.");
-        }
-
-        public static async Task<KeyPair> CreateAccountKeyPair(string description)
-        {
-            var pair = KeyPair.Random();
-            await FundAccountWithXlm(pair.AccountId);
-
-            Console.WriteLine($"{description} secret key is {pair.SecretSeed}");
-            Console.WriteLine($"{description} public key is {pair.AccountId}");
-            Console.WriteLine($"{pair.AccountId} funded successfully with XLM");
-
-            return pair;
-        }
-
-        //public static async Task CreateFakeProposal(string)
-
-        public static async Task CreateFeesPaymentClaimableBalance(KeyPair proposalCreator, KeyPair destination)
-        {
-            var proposalCreatorAccountResponse = await Server.Accounts.Account(proposalCreator.AccountId);
-            var proposalCreatorAccount =
-                new Account(proposalCreator.AccountId, proposalCreatorAccountResponse.SequenceNumber);
-
-            var claimant = new Claimant
-            {
-                Destination = destination,
-                Predicate = ClaimPredicate.Unconditional()
-            };
-
-            var txBuilder = new TransactionBuilder(proposalCreatorAccount);
-            var claimableBalanceOp =
-                new CreateClaimableBalanceOperation.Builder(new AssetTypeNative(), "5", new[] {claimant})
-                    .SetSourceAccount(proposalCreator)
-                    .Build();
-            txBuilder.AddOperation(claimableBalanceOp);
-
-            var tx = txBuilder.Build();
-            tx.Sign(proposalCreator);
-            await Server.SubmitTransaction(tx);
         }
 
         public static async Task<KeyPair> GetOrCreateAccountKeyPair(
@@ -159,7 +109,6 @@ namespace PlutoDAO.Gov.Worker.Test.Integration.Helpers
             );
         }
 
-
         public static async Task OfferToSellAssetForXlm(Asset asset, KeyPair trader, string amount, string price)
         {
             var traderAccount = await GetAccount(trader);
@@ -169,7 +118,6 @@ namespace PlutoDAO.Gov.Worker.Test.Integration.Helpers
                         MaxValue.ToString(CultureInfo.InvariantCulture))
                     .SetSourceAccount(trader)
                     .Build();
-
 
             var bidOperation = new ManageSellOfferOperation.Builder(asset, new AssetTypeNative(), amount, price)
                 .SetOfferId(0)
