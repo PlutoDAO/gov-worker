@@ -5,6 +5,7 @@ services:
     ports:
       - "8000:8000"
       - "5555:5555"
+      - "8001:8001"
     container_name: gov-worker
     environment:
       LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
