@@ -17,7 +17,6 @@ namespace PlutoDAO.Gov.Worker.Test.Integration.Helpers
         private const int MaximumFiguresPerPayment = 16;
         public static Server Server { get; set; } = null!;
 
-
         public static async Task SaveProposal(string serializedProposal, KeyPair proposalMicropaymentReceiver,
             KeyPair proposalMicropaymentSender)
         {
@@ -56,7 +55,12 @@ namespace PlutoDAO.Gov.Worker.Test.Integration.Helpers
             tx.Sign(proposalMicropaymentSender);
             tx.Sign(proposalMicropaymentReceiver);
 
-            await Server.SubmitTransaction(tx);
+            var transactionResponse = await Server.SubmitTransaction(tx);
+            Console.WriteLine(
+                transactionResponse.IsSuccess()
+                    ? $"Proposal saved!"
+                    : ObjectDumper.Dump(transactionResponse)
+            );
         }
 
         public static EncodedProposalPayment Encode(string serializedProposal)
