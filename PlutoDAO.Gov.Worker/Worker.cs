@@ -190,7 +190,6 @@ namespace PlutoDAO.Gov.Worker
                     var tradeAggregations = await Server.TradeAggregations
                         .BaseAsset(Asset.CreateNonNativeAsset(whitelistedAsset.Asset.Code,
                             whitelistedAsset.Asset.Issuer.Address))
-                        //.BaseAsset(asset)
                         .CounterAsset(new AssetTypeNative())
                         .Resolution(604800000).Execute();
                     var priceInXlm = decimal.Parse(tradeAggregations.Records.First().Avg, CultureInfo.InvariantCulture);
