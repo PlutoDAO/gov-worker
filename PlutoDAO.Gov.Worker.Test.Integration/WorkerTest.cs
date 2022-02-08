@@ -15,6 +15,7 @@ using Asset = PlutoDAO.Gov.Worker.Entities.Asset;
 namespace PlutoDAO.Gov.Worker.Test.Integration
 {
     [Collection("Stellar collection")]
+    [TestCaseOrderer("PlutoDAO.Gov.Worker.Test.Integration.Helpers.AlphabeticalOrderer", "PlutoDAO.Gov.Worker.Test.Integration")]
     public class WorkerTest
     {
         private readonly ITestOutputHelper _testOutputHelper;
@@ -111,6 +112,40 @@ namespace PlutoDAO.Gov.Worker.Test.Integration
 
             Assert.Equal("1.0000000",
                 resultsAccountBalance.Single(balance => balance.AssetCode == "PROP2").BalanceString);
+        }
+
+        [Fact]
+        public async Task Test_01_Worker_Only_Creates_Trustline_For_Draw_In_Results_Account()
+        {
+            var client = new HttpClient();
+
+            var proposal =
+                $@"{{""name"": ""Proposal4NameTest"", ""description"": ""A testing proposal"", ""creator"": ""{
+                    Config.ProposalCreatorPublic
+                }"", ""deadline"": ""2030-11-19T16:08:19.290Z"", ""whitelistedAssets"": [{{""asset"": {{ ""isNative"": true, ""code"": ""XLM"", ""issuer"": ""{
+                    ""
+                }""}}, ""multiplier"": ""1""}}]}}";
+            
+            await PlutoDAOHelper.ChangeBlockchainServerTime(client, "+5d");
+            await ProposalHelper.SaveProposal(proposal, Config.PlutoDAOReceiverKeyPair, Config.PlutoDAOSenderKeyPair);
+            
+            var xlm = new Asset(new AccountAddress(""), "XLM", true);
+            
+            await VoteHelper.CastVote(Config.VoterKeyPair, Config.PlutoDAOEscrowKeyPair, "PROP4",
+                new Vote(Config.VoterPublic, new Option("FOR"), xlm, 50m));
+
+            await VoteHelper.CastVote(Config.VoterKeyPair, Config.PlutoDAOEscrowKeyPair, "PROP4",
+                new Vote(Config.VoterPublic, new Option("AGAINST"), xlm, 50m));
+            
+            Worker.Server = new Server(Config.TestHorizonUrl);
+            Worker.DateTimeProvider = new DateTimeProvider(DateTime.Today.AddDays(36));
+            Worker.WebDownloader = new WebDownloaderMock(Config.PntAssetIssuerPublic);
+            await Worker.Run();
+            
+            var resultsAccountBalance = await StellarHelper.GetAccountBalance(Config.PlutoDAOResultsKeyPair);
+
+            Assert.Equal("0.0000000",
+                resultsAccountBalance.Single(balance => balance.AssetCode == "PROP4").BalanceString);
         }
     }
 }
